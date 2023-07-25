@@ -94,6 +94,8 @@ draw(context){
             this.x = this.game.width;
             this.speedX = Math.random() * -1.5 - 0.5;
             this.markForDeletion = false;
+            this.lives=5;
+            this.score=this.lives;
         }
 
         update() {
@@ -104,6 +106,9 @@ draw(context){
         draw(context) {
             context.fillStyle = 'red';
             context.fillRect(this.x, this.y, this.width, this.height); // Corrected 'height' property
+            context.fillStyle='black';
+            context.font='20px Helvetica'
+            context.fillText(this.lives,this.x,this.y)
         }
     }
 
@@ -123,13 +128,24 @@ constructor(game) {
     this.game=game;
     this.fontSize=25;
     this.fontFamily='Helvetica';
-    this.color='yellow'
+    this.color='white'
 }
 draw(context){
+    context.save();
     context.fillStyle=this.color;
+context.shadowOffsetX=2;
+context.shadowOffsetY=2;
+context.shadowColor='black';
+
+    context.font=this.fontSize+'px'+this.fontFamily;
+    /*score*/
+    context.fillText('Score' + this.game.score,20,40);
+
+    /*ammo*/
     for (let i=0;i<this.game.ammo;i++){
         context.fillRect(20+5*i,50,3,20);
     }
+    context.restore();
 }
     }
     class Game{
@@ -148,6 +164,8 @@ this.ui=new UI(this);
             this.ammoTimer=0;
             this.ammoInterval=500;
             this.gameOver=false;
+            this.score=0;
+            this.winningScore=10;
         }
         update(deltaTime){
             this.player.update();
@@ -160,11 +178,29 @@ this.ui=new UI(this);
             }
             this.enemies.forEach(enemy =>{
                 enemy.update();
+                if(this.checkCollision(this.player,enemy)){
+                    enemy.markForDeletion=true;
+                }
+                this.player.projecttiles.forEach(projectile =>{
+                    if(this.checkCollision(projectile,enemy)){
+                        enemy.lives--;
+                        projectile.markForDeletion=true;
+                        if(enemy.lives<=0){
+                            enemy.markForDeletion=true;
+                            this.score +=enemy.score;
+                            /*according to score game ove and level up*/
+                            if(this.score>this.winningScore){
+                                this.gameOver=true;
+                            }
+                        }
+                    }
+                })
             });
             this.enemies=this.enemies.filter(enemy => !enemy.markForDeletion);
             if(this.enemyTimer>this.enemyInterval && !this.gameOver){
                 this.addEnemy();
                 this.enemyTimer=0;
+
             }else {
                 this.enemyTimer +=deltaTime;
             }
