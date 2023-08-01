@@ -55,6 +55,9 @@ draw(context){
             this.game=game;
             this.width=120;
             this.height=190;
+            this.frameX=0;
+            this.frameY=0;
+            this.maxFrame=37;
             this.x=20;
             this.y=100;
             /*player move y axis*/
@@ -73,11 +76,18 @@ draw(context){
                 projectile.update();
             });
             this.projecttiles=this.projecttiles.filter(projectile => !projectile.markForDeletion)
+            /*sprite animation*/
+            if(this.frameX<this.maxFrame){
+                this.frameX++;
+
+            }else {
+                this.frameX=0;
+            }
         }
         draw(context){
             context.fillStyle='black';
             context.fillRect(this.x,this.y,this.width,this.height);
-            context.drawImage(this.image,this.x,this.y);
+            context.drawImage(this.image,this.frameX*this.width,this.frameY*this.height,this.width,this.height,this.x,this.y,this.width,this.height);
             this.projecttiles.forEach(projectile =>{
                 projectile.draw(context);
             });
