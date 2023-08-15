@@ -4,8 +4,8 @@ window.addEventListener('load', function () {
 
     const canvas = document.getElementById('canvas1');
     const ctx = canvas.getContext('2d');
-    canvas.width = 1500;
-    canvas.height = 500;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
     class InputHandler {
         constructor(game) {
@@ -123,7 +123,7 @@ window.addEventListener('load', function () {
             this.angle = 0;
             this.va = Math.random() * 0.2 - 0.1;
             this.bounced = 0;
-            this.bottomBounceBoundary = Math.random() * 80 + 60;
+            this.bottomBounceBoundary = Math.random() * 100 + 60;
         }
 
         update() {
@@ -136,7 +136,7 @@ window.addEventListener('load', function () {
                 this.markForDirection = true;
             }
 
-            if (this.y > this.game.height - this.bottomBounceBoundary && this.bounced < 5) {
+            if (this.y > this.game.height - this.bottomBounceBoundary && this.bounced < 2) {
                 this.bounced++;
                 this.speedY *= -0.7;
             }
@@ -257,6 +257,7 @@ window.addEventListener('load', function () {
             this.frameX = 0;
             this.frameY = 0;
             this.maxFrame = 37;
+
         }
 
         update() {
@@ -355,8 +356,7 @@ window.addEventListener('load', function () {
             this.width = 1768;
             this.height = 500;
             this.x = 0;
-            this.y = 0;
-        }
+            this.y = this.game.height - this.height;        }
 
         update() {
             if (this.x <= -this.width) this.x = 0;
@@ -382,7 +382,10 @@ window.addEventListener('load', function () {
             this.layer2 = new Layer(this.game, this.image2, 0.4);
             this.layer3 = new Layer(this.game, this.image3, 1);
             this.layer4 = new Layer(this.game, this.image4, 1.5);
+            this.layer1.y = 0;
 
+            // Position layer 4 at the bottom
+            this.layer4.y = this.game.height - this.layer4.height;
             this.layers = [this.layer1, this.layer2, this.layer3];
         }
 
@@ -493,8 +496,9 @@ window.addEventListener('load', function () {
                 enemy.update();
                 if (this.checkCollision(this.player, enemy)) {
                     enemy.markForDeletion = true;
-                    for (let i = 0; i < 10; i++) {
-                        this.practicle.push(new particle(this, enemy.x + enemy.width * 0.5, enemy.y + enemy.height * 0.5));
+                    for (let i = 0; i < enemy.score; i++) {
+                        this.practicle.push(new particle(this, enemy.x + enemy.width * 0.5,
+                            enemy.y + enemy.height * 0.5));
                     }
                     if (enemy.type === 'lucky') this.player.enterPowerUp();
                     else this.score--;
@@ -505,11 +509,11 @@ window.addEventListener('load', function () {
                         projectile.markForDeletion = true;
                         this.practicle.push(new particle(this, enemy.x + enemy.width * 0.5, enemy.y + enemy.height * 0.5));
                         if (enemy.lives <= 0) {
-                            for (let i = 0; i < 10; i++) {
+                            for (let i = 0; i < enemy.score; i++) {
                                 this.practicle.push(new particle(this, enemy.x + enemy.width * 0.5, enemy.y + enemy.height * 0.5));
                             }
                             enemy.markForDeletion = true;
-                            if(enemy.type==='hive'){
+                            if(enemy.type ==='hive'){
                                 for (let i = 0; i < 5; i++) {
                                     this.enemies.push(new  Drone(this,
                                         enemy.x+Math.random()*enemy.width,
