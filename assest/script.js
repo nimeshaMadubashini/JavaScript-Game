@@ -423,18 +423,32 @@ window.addEventListener('load', function () {
             /*timer*/
             const formattedTime = (this.game.gameTime * 0.001).toFixed(1);
             context.fillText('Timer:  ' + formattedTime, 20, 100);
+
+
+
+
             /*game  over masseage*/
             if (this.game.gameOver) {
                 context.textAlign = 'center';
                 let message1;
                 let message2;
-                if (this.game.score > this.game.winningScore) {
-                    message1 = 'Most Wondrous';
-                    message2 = 'Well done explorer!'
+                if (this.game.score > this.game.winningScores[0] && this.game.score <= this.game.winningScores[1]) {
+                    message1 = 'Level 2';
+                    message2 = 'Well done explorer!';
+                    this.game.speed = 2;
+                } else if (this.game.score > this.game.winningScores[1] && this.game.score <= this.game.winningScores[2]) {
+                    message1 = 'Level 3';
+                    message2 = 'Well done explorer!';
+                    this.game.speed = 3;
+                } else if (this.game.score > this.game.winningScores[2] && this.game.score <= this.game.winningScores[3]) {
+                    message1 = 'Level 4';
+                    message2 = 'Well done explorer!';
+                    this.game.speed = 4;
                 } else {
                     message1 = 'Blazes!';
-                    message2 = 'Get my repair kit  and try again';
+                    message2 = 'Get my repair kit and try again';
                 }
+
                 context.font = '100px' + this.fontFamily;
                 context.fillText(message1, this.game.width * 0.5, this.game.height * 0.5 - 20);
 
@@ -447,11 +461,13 @@ window.addEventListener('load', function () {
             for (let i = 0; i < this.game.ammo; i++) {
                 context.fillRect(20 + 5 * i, 50, 3, 20);
             }
+            context.fillText('Level: ' + (this.game.currentLevel + 1), 20, 70);
+
             context.restore();
         }
     }
 
-    class Game {
+   /* class Game {
         constructor(width, height) {
             this.width = width;
             this.height = height;
@@ -470,7 +486,8 @@ window.addEventListener('load', function () {
             this.ammoInterval = 500;
             this.gameOver = false;
             this.score = 0;
-            this.winningScore = 10;
+            this.winningScores = [10, 20, 30, 40]; // Define winning scores for each level
+            this.currentLevel = 0; // Initialize with level 0
             this.gameTime = 0;
             this.timeLimit = 15000;
             this.speed = 1;
@@ -523,7 +540,7 @@ window.addEventListener('load', function () {
 
                             }
                             if (!this.gameOver) this.score += enemy.score;
-                            /*according to score game ove and level up*/
+                            /!*according to score game ove and level up*!/
                             if (this.score > this.winningScore) {
                                 this.gameOver = true;
                             }
@@ -538,6 +555,23 @@ window.addEventListener('load', function () {
 
             } else {
                 this.enemyTimer += deltaTime;
+            }
+            if (this.score >= this.winningScores[this.currentLevel]) {
+                this.currentLevel++;
+                // Adjust game properties based on the current level
+                switch (this.currentLevel) {
+                    case 1:
+                        this.speed = 2;
+                        // Add any other level-specific adjustments
+                        break;
+                    case 2:
+                        this.speed = 3;
+                        // Add any other level-specific adjustments
+                        break;
+                    // Add more cases for additional levels
+                }
+                this.enemyTimer = 0;
+
             }
         }
 
@@ -557,9 +591,9 @@ window.addEventListener('load', function () {
             if (randomize < 0.3) this.enemies.push(new Angler1(this));
             else if (randomize < 0.6) this.enemies.push(new Angler2(this));
             else if (randomize < 0.8) this.enemies.push(new HiveWhale(this));
-
             this.enemies.push(new luckyFish(this));
         }
+
 
         checkCollision(rect1, rect2) {
             return (rect1.x < rect2.x + rect2.width &&
@@ -569,6 +603,170 @@ window.addEventListener('load', function () {
             )
         }
 
+    }*/
+    class Game {
+        constructor(width, height) {
+            this.width = width;
+            this.height = height;
+            this.background = new Background(this);
+            this.player = new player(this);
+            this.input = new InputHandler(this);
+            this.ui = new UI(this);
+            this.keys = [];
+            this.enemies = [];
+            this.practicle = [];
+            this.enemyTimer = 0;
+            this.enemyInterval = 2000;
+            this.ammo = 20;
+            this.maxAmmo = 50;
+            this.ammoTimer = 0;
+            this.ammoInterval = 500;
+            this.gameOver = false;
+            this.score = 0;
+            this.winningScores = [10, 15, 20, 20]; // Define winning scores for each level
+            this.currentLevel = 0; // Initialize with level 0
+            this.gameTime = 0;
+            this.timeLimit = 16000;
+            this.speed = 0.5;
+            this.debug = false;
+        }
+
+        update(deltaTime) {
+            if (!this.gameOver) this.gameTime += deltaTime;
+            if (this.gameTime > this.timeLimit) this.gameOver = true;
+            this.background.update();
+            this.background.layer4.update();
+            this.player.update(deltaTime);
+            if (this.ammoTimer > this.ammoInterval) {
+                if (this.ammo < this.maxAmmo) this.ammo++;
+                this.ammoTimer = 0;
+            } else {
+                this.ammoTimer += deltaTime;
+            }
+            this.practicle.forEach(particle => particle.update());
+            this.practicle = this.practicle.filter(particle => !particle.markForDirection);
+            this.enemies.forEach(enemy => {
+                enemy.update();
+                if (this.checkCollision(this.player, enemy)) {
+                    enemy.markForDeletion = true;
+                    for (let i = 0; i < enemy.score; i++) {
+                        this.practicle.push(new particle(this, enemy.x + enemy.width * 0.5, enemy.y + enemy.height * 0.5));
+                    }
+                    if (enemy.type === 'lucky') this.player.enterPowerUp();
+                    else this.score--;
+                }
+                this.player.projecttiles.forEach(projectile => {
+                    if (this.checkCollision(projectile, enemy)) {
+                        enemy.lives--;
+                        projectile.markForDeletion = true;
+                        this.practicle.push(new particle(this, enemy.x + enemy.width * 0.5, enemy.y + enemy.height * 0.5));
+                        if (enemy.lives <= 0) {
+                            for (let i = 0; i < enemy.score; i++) {
+                                this.practicle.push(new particle(this, enemy.x + enemy.width * 0.5, enemy.y + enemy.height * 0.5));
+                            }
+                            enemy.markForDeletion = true;
+                            if (enemy.type === 'hive') {
+                                for (let i = 0; i < 5; i++) {
+                                    this.enemies.push(new Drone(this,
+                                        enemy.x + Math.random() * enemy.width,
+                                        enemy.y + Math.random() * enemy.height * 0.5));
+                                }
+                            }
+                            if (!this.gameOver) this.score += enemy.score;
+                            if (this.score > this.winningScores[this.currentLevel]) {
+                                this.gameOver = true;
+                            }
+                        }
+                    }
+                });
+            });
+            this.enemies = this.enemies.filter(enemy => !enemy.markForDeletion);
+            if (this.enemyTimer > this.enemyInterval && !this.gameOver) {
+                this.addEnemy();
+                this.enemyTimer = 0;
+            } else {
+                this.enemyTimer += deltaTime;
+            }
+            if (this.score >= this.winningScores[this.currentLevel]) {
+                this.currentLevel++;
+                switch (this.currentLevel) {
+                    case 1:
+                        this.speed = 0.75;
+                        this.enemyInterval=2000;
+                        this.addEnemy();
+                        break;
+                    case 2:
+                        this.enemyInterval=2500;
+
+                        this.speed = 1;
+                        this.addEnemy();
+
+                        break;
+                    case 3:
+                        this.enemyInterval=3000;
+
+                        this.speed = 1.05;
+                        this.addEnemy();
+
+                        break;
+                }
+                this.enemyTimer = 0;
+            }
+        }
+
+        draw(context) {
+            this.background.draw(context);
+            this.ui.draw(context);
+            this.player.draw(context);
+            this.practicle.forEach(particle => particle.draw(context));
+            this.enemies.forEach(enemy => {
+                enemy.draw(context);
+            });
+            this.background.layer4.draw(context);
+        }
+
+       /* addEnemy() {
+            const randomize = Math.random();
+            if (randomize < 0.3) this.enemies.push(new Angler1(this));
+            else if (randomize < 0.6) this.enemies.push(new Angler2(this));
+            else if (randomize < 0.8) this.enemies.push(new HiveWhale(this));
+            this.enemies.push(new luckyFish(this));
+        }*/
+        addEnemy() {
+            const randomize = Math.random();
+            let numEnemies = 1; // Default number of enemies to add
+
+            // Increase the number of enemies based on the current level
+            switch (this.currentLevel) {
+                case 0:
+                    numEnemies = 1;
+                    break;
+                case 1:
+                    numEnemies = 2;
+                    break;
+                case 2:
+                    numEnemies = 3;
+                    break;
+                // Add more cases for additional levels
+            }
+
+            // Add the specified number of enemies
+            for (let i = 0; i < numEnemies; i++) {
+                if (randomize < 0.3) this.enemies.push(new Angler1(this));
+                else if (randomize < 0.6) this.enemies.push(new Angler2(this));
+                else if (randomize < 0.8) this.enemies.push(new HiveWhale(this));
+                this.enemies.push(new luckyFish(this));
+            }
+        }
+
+        checkCollision(rect1, rect2) {
+            return (
+                rect1.x < rect2.x + rect2.width &&
+                rect1.x + rect1.width > rect2.x &&
+                rect1.y < rect2.y + rect2.height &&
+                rect1.height + rect1.y > rect2.y
+            );
+        }
     }
 
     const game = new Game(canvas.width, canvas.height);
